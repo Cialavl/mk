@@ -1,7 +1,7 @@
+#define WIN32_LEAN_AND_MEAN
 #include <translate_command/translate_command.h>
 
 
-#include <boost/process.hpp>
 
 atomizationCmd_translate::AtomCmdTranslate::AtomCmdTranslate(const std::string& _type) : l_type(_type) {
 	get_model_root();
@@ -68,7 +68,7 @@ void atomizationCmd_translate::AtomCmdTranslate::output(std::vector<std::string>
 #elif defined(__linux__)
 		std::cout << text << "\n";
 #endif
-		
+
 	}
 }
 

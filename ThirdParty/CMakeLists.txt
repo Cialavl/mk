@@ -22,7 +22,7 @@ target_link_libraries(ThirdParty PUBLIC sentencepiece)
 
 # This CMake configuration file provides support for find_package(Boost).
 if (MSVC)
-   find_package(Boost 1.87.0 REQUIRED COMPONENTS  locale filesystem PATHS C:/Boost)
+   find_package(Boost REQUIRED COMPONENTS  locale filesystem)
 else()
 	 find_package(Boost  REQUIRED COMPONENTS  locale filesystem )
 endif()

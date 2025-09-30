@@ -1,12 +1,10 @@
-#include<mk_command_strategy/mk_command_strategy.h>
-#include<commands/cmake_command.h>
-
-#include<commands/gcc_command.h>
+#define WIN32_LEAN_AND_MEAN
 #include<commands/translate_command.h>
-
-#include <boost/locale/encoding.hpp>
+#include<mk_command_strategy/mk_command_strategy.h>
+#include<commands/gcc_command.h>
 #include <commands/add_command.h>
 #include <commands/new_command.h>
+#include <boost/locale/encoding.hpp>
 int MkCommandStrategy::CMKCommandStrategy::execute(std::vector<std::string> v_command)
 {
 
@@ -23,7 +21,7 @@ int MkCommandStrategy::CMKCommandStrategy::execute(std::vector<std::string> v_co
 		}
 		//cmd = cmd + v_command.at(i);
 		if(!isUtf8(cmd)) {
-            std::cout<<"cmd is not utf_8"<<"\n";
+       
 			cmd = boost::locale::conv::between(cmd, "UTF-8", "GBK");
 		}
 		//std::cout << "cmd:" << cmd << std::endl;

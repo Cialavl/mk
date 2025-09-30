@@ -1,8 +1,6 @@
 #pragma once
+#define WIN32_LEAN_AND_MEAN
 #include <array>
-#include <boost/algorithm/string.hpp>
-#include <boost/locale/encoding.hpp>
-#include <boost/process.hpp>
 #include <codecvt>
 #include <cryptopp/aes.h>
 #include <cryptopp/base64.h>
@@ -22,15 +20,16 @@
 #include <stdexcept>
 #include <stdlib.h>
 #include <string.h>
+#include <boost/algorithm/string.hpp>
+#include <boost/locale/encoding.hpp>
 
-namespace bp = boost::process;
 int run(const char *cmd);
 void TextTurnsSound(std::string _txt);
 int create_txt(std::string _txtPath, std::string _nameTxt);
 
 std::string stringCharacterReplace(std::string str, char _oldch,
                                    std::string _newch);
-std::string exec_cmd(const char *cmd);
+//std::string exec_cmd(const char *cmd);
 
 inline std::string wstring_to_utf8(const std::wstring &wstr) {
   std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;

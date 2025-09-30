@@ -25,24 +25,23 @@ int run(const char* cmd) {
     return 0;
 }
 
-std::string exec_cmd(const char* cmd) {
-    std::string line;
-    try {
-        bp::ipstream pipe_stream; // 用于捕获输出
-        bp::child c(cmd, bp::std_out > pipe_stream); // 在 Unix/Linux 上
-        // bp::child c("dir", bp::std_out > pipe_stream); // 在 Windows 上
-
-        while (pipe_stream && std::getline(pipe_stream, line) && !line.empty()) {
-            std::cout << line << std::endl; // 输出命令结果
-        }
-
-        c.wait(); // 等待进程结束
-        std::cout << "Command executed successfully." << std::endl;
-    } catch (const std::exception& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
-    }
-    return line;
-}
+//std::string exec_cmd(const char* cmd) {
+//    std::string line;
+//    try {
+//        bp::ipstream pipe_stream; // 用于捕获输出
+//        bp::child c(cmd, bp::std_out > pipe_stream); // 在 Unix/Linux 上
+//
+//        while (pipe_stream && std::getline(pipe_stream, line) && !line.empty()) {
+//            std::cout << line << std::endl; // 输出命令结果
+//        }
+//
+//        c.wait(); // 等待进程结束
+//        std::cout << "Command executed successfully." << std::endl;
+//    } catch (const std::exception& e) {
+//        std::cerr << "Error: " << e.what() << std::endl;
+//    }
+//    return line;
+//}
 void TextTurnsSound(std::string _txt) {
     std::string cmd_string = " echo '" + _txt
                            + "' | .\\piper\\piper.exe --model .\\piper\\zh_CN-huayan-medium.onnx -c "

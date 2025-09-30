@@ -1,4 +1,5 @@
 #pragma once
+#define WIN32_LEAN_AND_MEAN
 #include <ThirdParty/thirdparty.h>
 #include <abstraction_command/abstraction_command.h>
 #include <template_path/template_path.h>
@@ -22,7 +23,7 @@ namespace atomizationCmd_translate {
         void get_model_root();
         void output(std::vector<std::string>&& _output);
         std::string translationSentences(std::string& src);
-        int set_ctranslate2(ctranslate2::Device _device = ctranslate2::Device::CPU);
+        int set_ctranslate2(ctranslate2::Device _device = ctranslate2::Device::CUDA);
         void set_processor_languages();
 
 
