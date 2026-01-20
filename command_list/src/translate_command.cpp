@@ -1,6 +1,8 @@
 #define WIN32_LEAN_AND_MEAN
 #include <translate_command/translate_command.h>
-
+#include<boost/locale.hpp>
+#include<boost/stacktrace/stacktrace.hpp>
+#include<boost/algorithm/algorithm.hpp>
 
 
 atomizationCmd_translate::AtomCmdTranslate::AtomCmdTranslate(const std::string& _type) : l_type(_type) {
@@ -59,9 +61,9 @@ void atomizationCmd_translate::AtomCmdTranslate::translation(std::string _input)
 
 void atomizationCmd_translate::AtomCmdTranslate::output(std::vector<std::string>&& _output) {
 	for(auto& text : _output) {
-		boost::algorithm::replace_all(text, "▁", "");
-		boost::algorithm::replace_all(text, "?", "");
-		boost::algorithm::replace_all(text, "⁇", "");
+		//boost::algorithm::replace_all(text, "▁", "");
+		//boost::algorithm::replace_all(text, "?", "");
+		//boost::algorithm::replace_all(text, "⁇", "");
 
 #if defined(_WIN32) || defined(_WIN64)
 		std::cout << boost::locale::conv::between(text, "GBK", "UTF-8") << std::endl;
@@ -108,7 +110,7 @@ void atomizationCmd_translate::AtomCmdTranslate::get_model_root(std::string _pat
 }
 
 void atomizationCmd_translate::AtomCmdTranslate::addlanguage(std::string _path) {
-	_path = stringCharacterReplace(_path, '\\', "/");
+	//_path = stringCharacterReplace(_path, '\\', "/");
 	// std::cout << _path << std::endl;
 	languages.processor = _path + "/model/opus-2020-07-17zhen/source.spm";
 	languages.resprocessor = _path + "/model/opus-2020-07-17enzh/source.spm";
@@ -128,9 +130,11 @@ atomizationCmd_translate::AtomCmdTranslate::~AtomCmdTranslate() {
 std::vector<std::string> atomizationCmd_translate::StrPrse::strslice() {
 	return [&]() -> std::vector<std::string> {
 		if("zhen" == l_type) {
-			vstrs = truncateIntoSentencesUtf8(strs, 140);
+			//vstrs = truncateIntoSentencesUtf8(strs, 140);
+                    vstrs = {boost::locale::conv::from_utf(strs, "gb2312")};
 		} else if("enzh" == l_type) {
-			vstrs = truncateIntoSentencesUtf8(strs, 240);
+			//vstrs = truncateIntoSentencesUtf8(strs, 240);
+                    vstrs = {boost::locale::conv::from_utf(strs, "gb2312")};
 		}
 		return vstrs;
 	}();

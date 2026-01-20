@@ -1,9 +1,13 @@
 #pragma once
 #define WIN32_LEAN_AND_MEAN
-#include <ThirdParty/thirdparty.h>
 #include <abstraction_command/abstraction_command.h>
 #include <template_path/template_path.h>
-
+#include <ctranslate2/translator.h>
+#include <translate_command/sentencepiece_processor.h>
+#include <translate_command/sentencepiece_trainer.h>
+#include<boost/locale.hpp>
+#include<boost/stacktrace/stacktrace.hpp>
+#include<boost/algorithm/algorithm.hpp>
 namespace atomizationCmd_translate {
 
     struct Languages {
