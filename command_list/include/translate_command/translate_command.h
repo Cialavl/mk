@@ -8,6 +8,7 @@
 #include<boost/locale.hpp>
 #include<boost/stacktrace/stacktrace.hpp>
 #include<boost/algorithm/algorithm.hpp>
+#include <codecvt>
 namespace atomizationCmd_translate {
 
     struct Languages {
@@ -60,7 +61,9 @@ namespace atomizationCmd_translate {
     public:
         StrPrse(std::string&& str, std::string&& _type) : l_type(_type), strs(str) {}
         std::vector<std::string> strslice();
-
+        std::string wstring_to_utf8(const std::wstring& wstr);
+        std::wstring utf8_to_wstring(const std::string& str);
+        std::vector<std::string> truncateIntoSentencesUtf8(const std::string& text, size_t max_len);
     private:
         std::string l_type;
         std::string strs;
