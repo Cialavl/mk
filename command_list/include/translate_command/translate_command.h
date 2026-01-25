@@ -8,7 +8,6 @@
 #include<boost/locale.hpp>
 #include<boost/stacktrace/stacktrace.hpp>
 #include<boost/algorithm/algorithm.hpp>
-#include <codecvt>
 namespace atomizationCmd_translate {
 
     struct Languages {
