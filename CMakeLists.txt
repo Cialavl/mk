@@ -21,16 +21,18 @@ include(FetchContent)
 FetchContent_Declare(
   sentencepiece
   GIT_REPOSITORY https://github.com/google/sentencepiece.git
+  GIT_TAG        v0.2.1   # 建议固定版本
 )
 
 FetchContent_MakeAvailable(sentencepiece)
 
 FetchContent_Declare(
   googletest
-  URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
+  GIT_REPOSITORY https://github.com/google/googletest.git
+  GIT_TAG        v1.14.0
 )
 
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)  # 必须放在 MakeAvailable 之前
 FetchContent_MakeAvailable(googletest)
 # 包含子项目。
 
