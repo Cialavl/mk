@@ -2,6 +2,9 @@ cmake_minimum_required (VERSION 3.10)
 if(POLICY CMP0135)
   cmake_policy(SET CMP0135 NEW)
 endif()
+if(POLICY CMP0074)
+  cmake_policy(SET CMP0074 NEW)  # 让Boost_ROOT等变量生效
+endif()
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -32,10 +35,11 @@ FetchContent_Declare(
   GIT_TAG        v1.14.0
 )
 
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)  # 必须放在 MakeAvailable 之前
 FetchContent_MakeAvailable(googletest)
 # 包含子项目。
-
+set(Boost_ROOT "C:/Cpp_Libs/Boost")
 add_subdirectory ("mk")
 add_subdirectory ("path")
 add_subdirectory ("command_list")
