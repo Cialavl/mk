@@ -1,0 +1,13 @@
+{
+  "engine": "llama",
+  "llama": {
+    "model": "index-9b/Index-Translate-9B.Q4_K_M.gguf",
+    "expected_bytes": 5780090304,
+    "n_ctx": 4096,
+    "n_batch": 2048,
+    "n_gpu_layers": 99,
+    "n_threads": 8,
+    "flash_attn": true,
+    "max_new_tokens": 2048
+  }
+}

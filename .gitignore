@@ -365,3 +365,16 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Local model weights (download with scripts/fetch-model.ps1)
+resources/model/**/*.gguf
+resources/model/**/*.safetensors
+
+# Vendored llama.cpp source and scratch files
+third_party/
+tmp/
+dist/
+
+# The translation config must stay tracked even though model/ is ignored.
+!resources/model/
+!resources/model/config.json

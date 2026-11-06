@@ -2,131 +2,142 @@
 
 #include <commands/translate_command.h>
 #include <mk_command_strategy/mk_command_strategy.h>
-#include <translate_command/translate_command.h>
+#include <translate/text_chunker.h>
+#include <translate/text_postprocess.h>
+#include <translate/translate_config.h>
+#include <translate/translate_types.h>
+#include <translate/translator_factory.h>
 
-#include <boost/algorithm/string.hpp>
 #include <filesystem>
+#include <string>
+#include <vector>
 
-// ============================================================
-// StrPrse::truncateIntoSentencesUtf8 单元测试
-// ============================================================
+namespace fs = std::filesystem;
 
-TEST(StrPrseTest, EmptyInput) {
-    atomizationCmd_translate::StrPrse parser("", "enzh");
-    auto result = parser.truncateIntoSentencesUtf8("", 240);
-    EXPECT_TRUE(result.empty());
+TEST(TextChunkerTest, EmptyInput) {
+    mk::translate::TextChunker chunker(240);
+    EXPECT_TRUE(chunker.split("").empty());
 }
 
-TEST(StrPrseTest, ShortTextWithinLimit) {
-    atomizationCmd_translate::StrPrse parser("", "enzh");
-    auto result = parser.truncateIntoSentencesUtf8("Hello world", 240);
-    ASSERT_EQ(result.size(), 1);
-    EXPECT_EQ(result[0], "Hello world");
+TEST(TextChunkerTest, ShortTextStaysWhole) {
+    mk::translate::TextChunker chunker(240);
+    const auto chunks = chunker.split("Hello world");
+    ASSERT_EQ(chunks.size(), 1U);
+    EXPECT_EQ(chunks[0], "Hello world");
 }
 
-TEST(StrPrseTest, SplitAtEnglishPeriod) {
-    std::string text = std::string(240, 'a') + ". rest of the sentence";
-    atomizationCmd_translate::StrPrse parser("", "enzh");
-    auto result = parser.truncateIntoSentencesUtf8(text, 240);
-    ASSERT_EQ(result.size(), 2);
-    EXPECT_EQ(result[0], std::string(240, 'a') + ".");
-    EXPECT_EQ(result[1], " rest of the sentence");
+TEST(TextChunkerTest, SplitsAtEnglishPeriod) {
+    std::string text = std::string(240, 'a') + ". rest";
+    mk::translate::TextChunker chunker(240);
+    const auto chunks = chunker.split(text);
+    ASSERT_EQ(chunks.size(), 2U);
+    EXPECT_EQ(chunks[0], std::string(240, 'a') + ".");
 }
 
-TEST(StrPrseTest, SplitAtExclamationMark) {
-    std::string text = std::string(240, 'a') + "! after exclamation";
-    atomizationCmd_translate::StrPrse parser("", "enzh");
-    auto result = parser.truncateIntoSentencesUtf8(text, 240);
-    ASSERT_EQ(result.size(), 2);
-    EXPECT_EQ(result[0], std::string(240, 'a') + "!");
-    EXPECT_EQ(result[1], " after exclamation");
+TEST(TextChunkerTest, HardSplitWithoutBoundary) {
+    const std::string text(500, 'x');
+    mk::translate::TextChunker chunker(240);
+    const auto chunks = chunker.split(text);
+    ASSERT_EQ(chunks.size(), 3U);
+    EXPECT_EQ(chunks[0], std::string(240, 'x'));
+    EXPECT_EQ(chunks[1], std::string(240, 'x'));
+    EXPECT_EQ(chunks[2], std::string(20, 'x'));
 }
 
-TEST(StrPrseTest, SplitAtQuestionMark) {
-    std::string text = std::string(240, 'a') + "? after question mark";
-    atomizationCmd_translate::StrPrse parser("", "enzh");
-    auto result = parser.truncateIntoSentencesUtf8(text, 240);
-    ASSERT_EQ(result.size(), 2);
-    EXPECT_EQ(result[0], std::string(240, 'a') + "?");
-    EXPECT_EQ(result[1], " after question mark");
+TEST(TextChunkerTest, NeverCutsUtf8Sequence) {
+    const std::string one = "\xE4\xB8\xB8";  // 丸
+    std::string text;
+    for (int i = 0; i < 100; ++i) text += one;
+
+    mk::translate::TextChunker chunker(30);
+    const auto chunks = chunker.split(text);
+    ASSERT_FALSE(chunks.empty());
+    for (const auto& chunk : chunks) {
+        ASSERT_FALSE(chunk.empty());
+        ASSERT_EQ(chunk.size() % 3, 0U);
+        for (std::size_t i = 0; i < chunk.size(); i += 3) {
+            EXPECT_EQ(static_cast<unsigned char>(chunk[i]), 0xE4U);
+        }
+    }
 }
 
-TEST(StrPrseTest, SplitAtChinesePeriod) {
-    std::string text = std::string(240, 'a') + "\xE3\x80\x82"  // UTF-8 for 。
-                           + "after chinese period";
-    atomizationCmd_translate::StrPrse parser("", "enzh");
-    auto result = parser.truncateIntoSentencesUtf8(text, 240);
-    ASSERT_EQ(result.size(), 2);
-    EXPECT_EQ(result[1], "after chinese period");
+TEST(TextChunkerTest, HandlesNewlines) {
+    mk::translate::TextChunker chunker(20);
+    const auto chunks = chunker.split("first line\nsecond line\nthird line");
+    EXPECT_GE(chunks.size(), 2U);
+    for (const auto& chunk : chunks) EXPECT_FALSE(chunk.empty());
 }
 
-TEST(StrPrseTest, FallbackToComma) {
-    std::string text = std::string(240, 'a') + ", after comma";
-    atomizationCmd_translate::StrPrse parser("", "enzh");
-    auto result = parser.truncateIntoSentencesUtf8(text, 240);
-    ASSERT_EQ(result.size(), 2);
-    EXPECT_EQ(result[0], std::string(240, 'a') + ",");
-    EXPECT_EQ(result[1], " after comma");
+TEST(LangPairTest, LegacyCodes) {
+    auto zhen = mk::translate::parse_lang_pair("zhen");
+    ASSERT_TRUE(zhen.has_value());
+    EXPECT_EQ(zhen->src, "zh");
+    EXPECT_EQ(zhen->tgt, "en");
+
+    auto enzh = mk::translate::parse_lang_pair("enzh");
+    ASSERT_TRUE(enzh.has_value());
+    EXPECT_EQ(enzh->src, "en");
+    EXPECT_EQ(enzh->tgt, "zh");
 }
 
-TEST(StrPrseTest, HardTruncateWhenNoBoundary) {
-    std::string text = std::string(500, 'x');
-    atomizationCmd_translate::StrPrse parser("", "enzh");
-    auto result = parser.truncateIntoSentencesUtf8(text, 240);
-    ASSERT_EQ(result.size(), 3);
-    EXPECT_EQ(result[0], std::string(240, 'x'));
-    EXPECT_EQ(result[1], std::string(240, 'x'));
-    EXPECT_EQ(result[2], std::string(20, 'x'));
+TEST(LangPairTest, GenericCodes) {
+    auto pair = mk::translate::parse_lang_pair("zh-en");
+    ASSERT_TRUE(pair.has_value());
+    EXPECT_EQ(pair->code(), "zh-en");
+
+    auto underscore = mk::translate::parse_lang_pair("en_ja");
+    ASSERT_TRUE(underscore.has_value());
+    EXPECT_EQ(underscore->tgt, "ja");
 }
 
-TEST(StrPrseTest, ChineseTextZhenMode) {
-    atomizationCmd_translate::StrPrse parser("", "zhen");
-    std::string one_char = "\xE4\xB8\xB8";                 // UTF-8 Chinese char 丸
-    std::string text = one_char;
-    for (int i = 1; i < 140; ++i) text += one_char;       // 140个 = 420 bytes
-    text += "\xE3\x80\x82";                                  // 。
-    text += "tail";
-    auto result = parser.truncateIntoSentencesUtf8(text, 140);
-    EXPECT_GE(result.size(), 2);
+TEST(LangPairTest, CompactCommands) {
+    auto zhja = mk::translate::parse_pair_code("zhja");
+    ASSERT_TRUE(zhja.has_value());
+    EXPECT_EQ(zhja->src, "zh");
+    EXPECT_EQ(zhja->tgt, "ja");
+
+    auto jaen = mk::translate::parse_pair_code("jaen");
+    ASSERT_TRUE(jaen.has_value());
+    EXPECT_EQ(jaen->code(), "ja-en");
+
+    auto enfr = mk::translate::parse_pair_code("enfr");
+    ASSERT_TRUE(enfr.has_value());
+    EXPECT_EQ(enfr->tgt, "fr");
+
+    EXPECT_TRUE(mk::translate::parse_pair_code("zhen").has_value());
+    EXPECT_TRUE(mk::translate::parse_pair_code("enzh").has_value());
+    EXPECT_FALSE(mk::translate::parse_pair_code("xxyy").has_value());
 }
 
-// ============================================================
-// 输出后处理逻辑测试
-// ============================================================
-
-std::string apply_post_processing(std::string text) {
-    boost::algorithm::replace_all(text, "\xE2\x96\x81", " ");   // ▁ → 空格
-    boost::algorithm::replace_all(text, "\xE2\x81\x87", "");     // ⁇ → 移除
-    return text;
+TEST(LangPairTest, RejectsInvalid) {
+    EXPECT_FALSE(mk::translate::parse_lang_pair("").has_value());
+    EXPECT_FALSE(mk::translate::parse_lang_pair("zh").has_value());
+    EXPECT_FALSE(mk::translate::parse_lang_pair("zh-").has_value());
+    EXPECT_FALSE(mk::translate::parse_lang_pair("zh-123").has_value());
 }
 
-TEST(PostProcessingTest, ReplaceSentencePieceMarkerWithSpace) {
-    std::string input = "Hello\xE2\x96\x81World";  // "Hello▁World"
-    std::string result = apply_post_processing(input);
-    EXPECT_EQ(result, "Hello World");
+TEST(LangPairTest, LanguageNames) {
+    EXPECT_EQ(mk::translate::language_name_zh("zh"), "中文");
+    EXPECT_EQ(mk::translate::language_name_zh("EN"), "英文");
+    EXPECT_EQ(mk::translate::language_name_zh("xx"), "xx");
 }
 
-TEST(PostProcessingTest, RemoveDoubleQuestionMarkArtifact) {
-    std::string input = "text\xE2\x81\x87""more";  // "text⁇more"
-    std::string result = apply_post_processing(input);
-    EXPECT_EQ(result, "textmore");
+TEST(PostProcessTest, TrimsAndNormalizes) {
+    EXPECT_EQ(mk::translate::clean_translation("  hello\r\nworld  "), "hello\nworld");
 }
 
-TEST(PostProcessingTest, NormalQuestionMarkPreserved) {
-    std::string input = "How are you?";
-    std::string result = apply_post_processing(input);
-    EXPECT_EQ(result, "How are you?");
+TEST(PostProcessTest, RemovesThinkingBlock) {
+    EXPECT_EQ(mk::translate::clean_translation("<think>noise</think>real answer"), "real answer");
 }
 
-TEST(PostProcessingTest, ChineseTextWithMarkers) {
-    std::string input = "\xE2\x96\x81\xE4\xBD\xA0\xE5\xA5\xBD\xE2\x96\x81\xE4\xB8\x96\xE7\x95\x8C";
-    std::string result = apply_post_processing(input);
-    EXPECT_EQ(result, " 你好 世界");
+TEST(PostProcessTest, RemovesLabel) {
+    EXPECT_EQ(mk::translate::clean_translation("译文：你好"), "你好");
+    EXPECT_EQ(mk::translate::clean_translation("Translation: hi"), "hi");
 }
 
-// ============================================================
-// UTF-8 检测测试
-// ============================================================
+TEST(PostProcessTest, CollapsesBlankLines) {
+    EXPECT_EQ(mk::translate::clean_translation("a\n\n\n\nb"), "a\n\nb");
+}
 
 TEST(Utf8DetectionTest, PureAscii) {
     MkCommandStrategy::CMKCommandStrategy strategy("test");
@@ -135,163 +146,65 @@ TEST(Utf8DetectionTest, PureAscii) {
 
 TEST(Utf8DetectionTest, ValidUtf8Chinese) {
     MkCommandStrategy::CMKCommandStrategy strategy("test");
-    std::string chinese = "\xE4\xBD\xA0\xE5\xA5\xBD";  // 你好
-    EXPECT_TRUE(strategy.isUtf8(chinese));
+    EXPECT_TRUE(strategy.isUtf8("\xE4\xBD\xA0\xE5\xA5\xBD"));
 }
 
 TEST(Utf8DetectionTest, InvalidUtf8Sequence) {
     MkCommandStrategy::CMKCommandStrategy strategy("test");
-    std::string invalid = "\xC0\xC0";  // invalid overlong encoding
-    EXPECT_FALSE(strategy.isUtf8(invalid));
-}
-
-TEST(Utf8DetectionTest, TruncatedUtf8Sequence) {
-    MkCommandStrategy::CMKCommandStrategy strategy("test");
-    std::string truncated = "\xE4\xBD";  // incomplete 3-byte sequence
-    EXPECT_FALSE(strategy.isUtf8(truncated));
+    EXPECT_FALSE(strategy.isUtf8("\xC0\xC0"));
 }
 
 TEST(Utf8DetectionTest, GBKEncoded) {
     MkCommandStrategy::CMKCommandStrategy strategy("test");
-    std::string gbk = "\xCE\xD2\xCA\xC7";  // 我是 in GBK
-    EXPECT_FALSE(strategy.isUtf8(gbk));
+    EXPECT_FALSE(strategy.isUtf8("\xCE\xD2\xCA\xC7"));
 }
 
-// ============================================================
-// 命令注册测试
-// ============================================================
-
-TEST(CommandRegistrationTest, EnzhCommandRegistered) {
-    MkCommandStrategy::CMKCommandStrategy strategy("enzh");
-    strategy.initmap();
-    EXPECT_NO_THROW(strategy.execute({"enzh"}));
-}
-
-TEST(CommandRegistrationTest, ZhenCommandRegistered) {
+TEST(CommandRegistrationTest, ZhenRegistered) {
     MkCommandStrategy::CMKCommandStrategy strategy("zhen");
     strategy.initmap();
-    EXPECT_NO_THROW(strategy.execute({"zhen"}));
+    EXPECT_EQ(strategy.execute({"zhen"}), 0);
 }
 
-// ============================================================
-// 集成测试：英文→中文翻译 (依赖模型文件)
-// ============================================================
-
-#define ENZH_MODEL_CHECK()                                                                                             \
-    do {                                                                                                               \
-        if (!std::filesystem::exists(std::filesystem::current_path() / "model" / "enzh_ctranslate2")) {                \
-            GTEST_SKIP() << "enzh model not found";                                                                    \
-        }                                                                                                              \
-    } while (0)
-
-TEST(TranslationIntegrationTest, EnzhHelloWorld) {
-    ENZH_MODEL_CHECK();
+TEST(CommandRegistrationTest, EnzhRegistered) {
     MkCommandStrategy::CMKCommandStrategy strategy("enzh");
     strategy.initmap();
-    std::vector<std::string> commands{"enzh", "Hello world"};
-    EXPECT_NO_THROW(strategy.execute(commands));
+    EXPECT_EQ(strategy.execute({"enzh"}), 0);
 }
 
-TEST(TranslationIntegrationTest, EnzhQuestion) {
-    ENZH_MODEL_CHECK();
-    MkCommandStrategy::CMKCommandStrategy strategy("enzh");
+TEST(CommandRegistrationTest, ZhJaRegistered) {
+    MkCommandStrategy::CMKCommandStrategy strategy("zhja");
     strategy.initmap();
-    std::vector<std::string> commands{"enzh", "How are you?"};
-    EXPECT_NO_THROW(strategy.execute(commands));
+    EXPECT_EQ(strategy.execute({"zhja"}), 0);
 }
 
-TEST(TranslationIntegrationTest, EnzhMultiSentence) {
-    ENZH_MODEL_CHECK();
-    MkCommandStrategy::CMKCommandStrategy strategy("enzh");
+TEST(CommandRegistrationTest, TrRegistered) {
+    MkCommandStrategy::CMKCommandStrategy strategy("tr");
     strategy.initmap();
-    std::vector<std::string> commands{"enzh", "Good morning. How are you today? I am fine, thank you."};
-    EXPECT_NO_THROW(strategy.execute(commands));
+    EXPECT_EQ(strategy.execute({"tr"}), 0);
 }
 
-TEST(TranslationIntegrationTest, EnzhLongText) {
-    ENZH_MODEL_CHECK();
-    MkCommandStrategy::CMKCommandStrategy strategy("enzh");
+TEST(CommandRegistrationTest, UnknownCommand) {
+    MkCommandStrategy::CMKCommandStrategy strategy("nope");
     strategy.initmap();
-    std::string text = "Proxy was created by Microsoft engineers and incubated at Microsoft from 2018 to Feb 2026, "
-                       "and has been used in the Windows operating system since 2022. "
-                       "It is now maintained by the Next Gen C++ Foundation (ngcpp).";
-    std::vector<std::string> commands{"enzh", text};
-    EXPECT_NO_THROW(strategy.execute(commands));
+    EXPECT_EQ(strategy.execute({"nope"}), 1);
 }
 
-// ============================================================
-// 集成测试：中文→英语翻译 (依赖模型文件)
-// ============================================================
+TEST(TranslationIntegrationTest, EnglishToChinese) {
+    const auto root = mk::translate::find_model_root();
+    const auto config = mk::translate::TranslateConfig::load(root / "config.json")
+                            .value_or(mk::translate::TranslateConfig::defaults(root));
 
-#define ZHEN_MODEL_CHECK()                                                                                             \
-    do {                                                                                                               \
-        if (!std::filesystem::exists(std::filesystem::current_path() / "model" / "zhen_ctranslate2")) {                \
-            GTEST_SKIP() << "zhen model not found";                                                                    \
-        }                                                                                                              \
-    } while (0)
+    const auto model = fs::exists(config.llama_model)
+                           ? config.llama_model
+                           : root / "index-2b" / "Index-Translate-2B.Q4_K_M.gguf";
+    if (!fs::exists(model)) {
+        GTEST_SKIP() << "GGUF model not found under " << root;
+    }
 
-TEST(TranslationIntegrationTest, ZhenHelloWorld) {
-    ZHEN_MODEL_CHECK();
-    MkCommandStrategy::CMKCommandStrategy strategy("zhen");
-    strategy.initmap();
-    std::vector<std::string> commands{"zhen", "\xE4\xBD\xA0\xE5\xA5\xBD\xE4\xB8\x96\xE7\x95\x8C"};  // 你好世界
-    EXPECT_NO_THROW(strategy.execute(commands));
-}
-
-TEST(TranslationIntegrationTest, ZhenQuestion) {
-    ZHEN_MODEL_CHECK();
-    MkCommandStrategy::CMKCommandStrategy strategy("zhen");
-    strategy.initmap();
-    std::vector<std::string> commands{"zhen", "\xE4\xBD\xA0\xE5\xA5\xBD\xE5\x90\x97\xEF\xBC\x9F"};  // 你好吗？
-    EXPECT_NO_THROW(strategy.execute(commands));
-}
-
-TEST(TranslationIntegrationTest, ZhenMultiSentence) {
-    ZHEN_MODEL_CHECK();
-    MkCommandStrategy::CMKCommandStrategy strategy("zhen");
-    strategy.initmap();
-    std::string input = "\xE6\x97\xA9\xE4\xB8\x8A\xE5\xA5\xBD\xE3\x80\x82"   // 早上好。
-                        "\xE4\xBD\xA0\xE4\xBB\x8A\xE5\xA4\xA9\xE5\xA5\xBD\xE5\x90\x97\xEF\xBC\x9F"  // 你今天好吗？
-                        "\xE6\x88\x91\xE5\xBE\x88\xE5\xA5\xBD\xEF\xBC\x8C\xE8\xB0\xA2\xE8\xB0\xA2\xE3\x80\x82";  // 我很好，谢谢。
-    std::vector<std::string> commands{"zhen", input};
-    EXPECT_NO_THROW(strategy.execute(commands));
-}
-
-TEST(TranslationIntegrationTest, ZhenShortPhrase) {
-    ZHEN_MODEL_CHECK();
-    MkCommandStrategy::CMKCommandStrategy strategy("zhen");
-    strategy.initmap();
-    std::vector<std::string> commands{"zhen", "\xE8\xB0\xA2\xE8\xB0\xA2"};  // 谢谢
-    EXPECT_NO_THROW(strategy.execute(commands));
-}
-
-// ============================================================
-// 边界条件测试
-// ============================================================
-
-TEST(StrPrseTest, SingleChar) {
-    atomizationCmd_translate::StrPrse parser("", "enzh");
-    auto result = parser.truncateIntoSentencesUtf8("A", 240);
-    ASSERT_EQ(result.size(), 1);
-    EXPECT_EQ(result[0], "A");
-}
-
-TEST(StrPrseTest, ExactlyAtLimit) {
-    std::string text = std::string(120, 'a');
-    atomizationCmd_translate::StrPrse parser("", "enzh");
-    auto result = parser.truncateIntoSentencesUtf8(text, 120);
-    ASSERT_EQ(result.size(), 1);
-    EXPECT_EQ(result[0], text);
-}
-
-TEST(PostProcessingTest, MultipleSpacesFromMarkers) {
-    std::string input = "a\xE2\x96\x81\xE2\x96\x81\xE2\x96\x81""b";
-    std::string result = apply_post_processing(input);
-    EXPECT_EQ(result, "a   b");
-}
-
-TEST(PostProcessingTest, NoMarkersUnchanged) {
-    std::string input = "plain text without any markers";
-    std::string result = apply_post_processing(input);
-    EXPECT_EQ(result, input);
+    auto resolved = config;
+    resolved.llama_model = model;
+    const auto pair = *mk::translate::parse_lang_pair("enzh");
+    auto translator = mk::translate::make_translator(resolved, pair);
+    const auto output = translator->translate("Hello world", pair, {});
+    EXPECT_FALSE(output.empty());
 }

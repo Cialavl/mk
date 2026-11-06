@@ -1,18 +1,20 @@
-#include<designmode/abstraction_strategy/abstraction_strategy.h>
+#include <designmode/abstraction_strategy/abstraction_strategy.h>
 
-void AbsStratety::CAbsStratry::add(std::string _command, CommonCommand::CCommonCommand* _command_type)
-{
-	name_command.insert(std::make_pair(_command, _command_type));
+#include <utility>
+
+namespace AbsStratety {
+
+void CAbsStratry::add(std::string command, CommandPtr command_type) {
+    name_command.insert_or_assign(std::move(command), std::move(command_type));
 }
 
-std::map<std::string, CommonCommand::CCommonCommand*> AbsStratety::CAbsStratry::getmap()
-{
-	return name_command;
+const std::map<std::string, CAbsStratry::CommandPtr>& CAbsStratry::getmap() const {
+    return name_command;
 }
 
-std::vector<std::string> AbsStratety::CAbsStratry::separate(std::string _commands)
-{
-
-
-	return commands;
+std::vector<std::string> CAbsStratry::separate(std::string commands) const {
+    (void)commands;
+    return {};
 }
+
+} // namespace AbsStratety
