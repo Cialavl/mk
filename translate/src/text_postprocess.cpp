@@ -1,7 +1,6 @@
 #include <translate/text_postprocess.h>
 
 #include <algorithm>
-#include <cstring>
 #include <string_view>
 
 namespace mk::translate {

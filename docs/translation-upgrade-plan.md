@@ -559,7 +559,8 @@ DeepL / Qwen-MT / Gemini 3.5 Flash Lite（Judge 79.52）/ GPT-5.6-Sol（89.10）
    而不是 FetchContent 源码构建。原因：CMake 4.3.1 + CUDA 13.3 + Ninja
    会把依赖参数 -MD 包成 -Xcompiler，nvcc 报
    "--dependency-file requires -M/-MD" 或 "single input file"。
-   源码构建路径保留，并加了 tools/nvcc_wrapper.py 兜底。
+   后续改为把 llama.cpp 独立编译成静态库安装到 C:\Cpp_Libs\llamacpp，
+   项目只 find_package 链接，不再源码构建。
 2. **命令行统一为 <src><tgt>**：mk zhja / mk jaen / mk enfr 与
    zhen/enzh 同风格；表外代码和 --engine/--model 覆盖仍走 mk tr。
 3. 9B 模型已下载并校验（5,780,090,304 字节，SHA256 9cc6758b...），

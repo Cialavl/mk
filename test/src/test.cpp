@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 
-#include <commands/translate_command.h>
 #include <mk_command_strategy/mk_command_strategy.h>
 #include <translate/text_chunker.h>
 #include <translate/text_postprocess.h>

@@ -1,6 +1,5 @@
 #include <translate/text_chunker.h>
 
-#include <array>
 #include <cstddef>
 #include <string>
 #include <string_view>

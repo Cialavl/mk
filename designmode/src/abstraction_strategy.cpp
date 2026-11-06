@@ -12,9 +12,4 @@ const std::map<std::string, CAbsStratry::CommandPtr>& CAbsStratry::getmap() cons
     return name_command;
 }
 
-std::vector<std::string> CAbsStratry::separate(std::string commands) const {
-    (void)commands;
-    return {};
-}
-
 } // namespace AbsStratety

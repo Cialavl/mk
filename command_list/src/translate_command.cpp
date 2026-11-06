@@ -6,7 +6,6 @@
 
 #include <boost/locale/encoding.hpp>
 
-#include <exception>
 #include <filesystem>
 #include <iostream>
 #include <stdexcept>

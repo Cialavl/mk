@@ -20,7 +20,6 @@ public:
 
     void add(std::string command, CommandPtr command_type);
     [[nodiscard]] const std::map<std::string, CommandPtr>& getmap() const;
-    [[nodiscard]] std::vector<std::string> separate(std::string commands) const;
 
 protected:
     std::map<std::string, CommandPtr> name_command;
