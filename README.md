@@ -29,7 +29,7 @@ Index-Translate-9B GGUF，静态链接，运行时只依赖系统 CUDA 的 cubla
 - llama.cpp 静态 /MT：C:/Cpp_Libs/llamacpp
   - 库：llama.lib、ggml.lib、ggml-base.lib、ggml-cpu.lib、ggml-cuda.lib
   - CMake 包：lib/cmake/llama、lib/cmake/ggml
-- gtest：优先用 third_party/googletest，本地没有时由 FetchContent 下载
+- gtest：C:/Cpp_Libs/gtest-mt（/MT 静态 CRT，含 CMake 包）
 
 Boost 和 llama.cpp 已经编好并安装，构建时直接 find_package，不需要
 再编译 CUDA 源码。

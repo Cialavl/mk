@@ -106,14 +106,16 @@ mk tr --to en --model path\to\other.gguf "文本"
 |---|---|---|
 | Boost 1.91 | C:/Cpp_Libs/Boost | b2 自编，link=static runtime-link=static |
 | llama.cpp | C:/Cpp_Libs/llamacpp | llama.lib + ggml*.lib，GGML_STATIC=ON |
-| gtest | third_party/googletest | 本地源；没有时 FetchContent 下载 |
+| gtest | C:/Cpp_Libs/gtest-mt | /MT 静态 CRT，CMake 包在 lib/cmake/GTest |
 
 CMake 关键设置：
 
 ~~~cmake
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 set(Boost_DIR "C:/Cpp_Libs/Boost/lib/cmake/Boost-1.91.0")
+set(GTest_DIR "C:/Cpp_Libs/gtest-mt/lib/cmake/GTest")
 set(llama_DIR "C:/Cpp_Libs/llamacpp/lib/cmake/llama")
+find_package(GTest CONFIG REQUIRED)
 find_package(llama CONFIG REQUIRED)
 ~~~
 

@@ -32,23 +32,10 @@ else()
     add_compile_options(-Wall -Wextra -Werror=return-type)
 endif()
 
-include(FetchContent)
-
-if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/third_party/googletest/CMakeLists.txt")
-    FetchContent_Declare(
-      googletest
-      SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/googletest"
-    )
-else()
-    FetchContent_Declare(
-      googletest
-      GIT_REPOSITORY https://github.com/google/googletest.git
-      GIT_TAG        v1.14.0
-    )
-endif()
-set(gtest_force_shared_crt OFF CACHE BOOL "" FORCE)
-set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(googletest)
+# Installed test dependency.
+set(GTest_DIR "C:/Cpp_Libs/gtest-mt/lib/cmake/GTest" CACHE PATH "")
+list(APPEND CMAKE_PREFIX_PATH "C:/Cpp_Libs/gtest-mt")
+find_package(GTest CONFIG REQUIRED)
 
 # Installed dependencies (see C:/Cpp_Libs).
 set(Boost_ROOT "C:/Cpp_Libs/Boost" CACHE PATH "")
