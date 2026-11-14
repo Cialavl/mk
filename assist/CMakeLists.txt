@@ -60,5 +60,5 @@ target_link_libraries(assist PUBLIC assist_ocr)
 target_link_libraries(assist PUBLIC winmm)
 
 if (TARGET tvlib)
-    target_link_libraries(assist PUBLIC tvlib tvlib_link_options)
+    target_link_libraries(assist PUBLIC tvlib)
 endif()

@@ -100,6 +100,7 @@ mk serve
 | MK_TTS_MODELS | 语音模型根目录 |
 | MK_TTS_VOICE | 音色包目录，默认爱莉希雅_一般_平常 |
 | MK_TTS_STEPS | 采样步数，默认 4（越大越慢） |
+| MK_TTS_NO_CACHE | 设为 1 时关闭 tvlib 进程级模型缓存（基准对比用） |
 
 ## 测试
 

@@ -50,7 +50,7 @@ find_package(llama CONFIG REQUIRED)
 
 set(TVLIB_ROOT "C:/Users/26495/Desktop/tvlib" CACHE PATH "tvlib source tree")
 if (EXISTS "${TVLIB_ROOT}/CMakeLists.txt")
-    set(TVLIB_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
+    option(TVLIB_BUILD_TOOLS "构建 tv_demo" OFF)
     add_subdirectory("${TVLIB_ROOT}" "${CMAKE_BINARY_DIR}/tvlib")
 endif()
 

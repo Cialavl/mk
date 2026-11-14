@@ -74,6 +74,9 @@ void TtsEngine::speak(const std::string& text) {
     request.guidance = 4.0f;
     request.use_apg = true;
 
+    if (const auto env = env_utf8("MK_TTS_NO_CACHE"); env && *env == "1") {
+        tvlib::set_cache_enabled(false);
+    }
     const tvlib::Result result = tvlib::synthesize(request, tvlib::Events{});
     if (!result.ok) {
         std::error_code ec;
