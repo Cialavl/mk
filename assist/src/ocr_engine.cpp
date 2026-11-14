@@ -43,12 +43,33 @@ void add_dll_dir(const fs::path& dir) {
 #endif
 }
 
+// With LOAD_LIBRARY_SEARCH_* set, LoadLibrary no longer searches PATH, so the
+// CUDA / cuDNN runtime directories have to be registered explicitly.
+void add_cuda_dirs() {
+    if (const auto cuda = env_utf8("CUDA_PATH"); cuda && !cuda->empty()) {
+        const fs::path root = path_from_utf8(*cuda);
+        add_dll_dir(root / "bin");
+        add_dll_dir(root / "bin" / "x64");
+    }
+
+    std::error_code ec;
+    const fs::path toolkit = "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA";
+    if (fs::is_directory(toolkit, ec)) {
+        for (const auto& entry : fs::directory_iterator(toolkit, ec)) {
+            if (!entry.is_directory()) continue;
+            add_dll_dir(entry.path() / "bin");
+            add_dll_dir(entry.path() / "bin" / "x64");
+        }
+    }
+}
+
 void prepare_dll_dirs(const fs::path& paddle_root) {
 #if defined(_WIN32)
     SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_USER_DIRS);
     add_dll_dir(paddle_root / "bin");
     add_dll_dir(paddle_root.parent_path() / "paddle_inference/paddle/lib");
     add_dll_dir(paddle_root.parent_path() / "paddle_inference/third_party/install/mklml/lib");
+    add_cuda_dirs();
 #endif
 }
 
@@ -62,6 +83,14 @@ std::filesystem::path executable_dir() {
 #else
     return fs::current_path();
 #endif
+}
+
+// Paddle Inference here is the GPU build; override with MK_OCR_DEVICE=cpu.
+std::string ocr_device() {
+    if (const auto env = env_utf8("MK_OCR_DEVICE"); env && !env->empty()) {
+        return *env;
+    }
+    return "gpu:0";
 }
 
 // PaddleOCR resolves its pipeline yaml from a build-time source path, so the
@@ -170,7 +199,7 @@ struct OcrEngine::Impl {
         params.use_doc_orientation_classify = false;
         params.use_doc_unwarping = false;
         params.use_textline_orientation = false;
-        params.device = "cpu";
+        params.device = ocr_device();
 
         if (const auto config = config_path(); !config.empty()) {
             params.paddlex_config = Utility::PaddleXConfigVariant(utf8_from_path(config));

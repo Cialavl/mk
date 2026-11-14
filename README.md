@@ -34,7 +34,8 @@ Windows 命令行工具集：命令策略 + 翻译 + OCR + 语音。
 | opencv | 5.1 静态库（opencv_world510.lib 等） |
 | tvlib | Desktop/tvlib，语音库（外部工程，CMake 里 add_subdirectory） |
 
-CUDA 13.3 运行库、NVIDIA 驱动为运行前提。
+CUDA 13.3 运行库（含 cuDNN 9）、NVIDIA 驱动为运行前提；
+OCR 默认跑在 GPU 上（Paddle Inference 为 WITH_GPU 构建）。
 
 ## 构建
 
@@ -93,6 +94,7 @@ mk serve
 | 变量 | 作用 |
 |---|---|
 | MK_TMP | 临时目录（TTS 中间 wav、OCR 结果），默认 LOCALAPPDATA/mk/tmp |
+| MK_OCR_DEVICE | Paddle 设备，默认 gpu:0（显存不足或没有 GPU 时设 cpu） |
 | MK_PADDLEOCR_ROOT | PaddleOCR 安装根目录 |
 | MK_PADDLEOCR_CONFIG | OCR 产线 yaml，默认 exe 同级 configs/OCR.yaml |
 | MK_TTS_MODELS | 语音模型根目录 |
