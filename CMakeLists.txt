@@ -33,24 +33,31 @@ else()
 endif()
 
 # Installed test dependency.
-set(GTest_DIR "C:/Cpp_Libs/gtest-mt/lib/cmake/GTest" CACHE PATH "")
-list(APPEND CMAKE_PREFIX_PATH "C:/Cpp_Libs/gtest-mt")
+set(GTest_DIR "C:/Cpp_Libs/mt/Release/gtest/lib/cmake/GTest" CACHE PATH "")
+list(APPEND CMAKE_PREFIX_PATH "C:/Cpp_Libs/mt/Release/gtest")
 find_package(GTest CONFIG REQUIRED)
 
 # Installed dependencies (see C:/Cpp_Libs).
-set(Boost_ROOT "C:/Cpp_Libs/Boost" CACHE PATH "")
-set(Boost_DIR "C:/Cpp_Libs/Boost/lib/cmake/Boost-1.91.0" CACHE PATH "")
+set(Boost_ROOT "C:/Cpp_Libs/mt/Release/Boost" CACHE PATH "")
+set(Boost_DIR "C:/Cpp_Libs/mt/Release/Boost/lib/cmake/Boost-1.91.0" CACHE PATH "")
 set(Boost_USE_STATIC_LIBS ON CACHE BOOL "" FORCE)
 set(Boost_USE_STATIC_RUNTIME ON CACHE BOOL "" FORCE)
 set(Boost_USE_DEBUG_LIBS OFF CACHE BOOL "" FORCE)
-set(llama_DIR "C:/Cpp_Libs/llamacpp/lib/cmake/llama" CACHE PATH "")
-list(APPEND CMAKE_PREFIX_PATH "C:/Cpp_Libs/Boost" "C:/Cpp_Libs/llamacpp")
+set(llama_DIR "C:/Cpp_Libs/mt/Release/llamacpp/lib/cmake/llama" CACHE PATH "")
+list(APPEND CMAKE_PREFIX_PATH "C:/Cpp_Libs/mt/Release/Boost" "C:/Cpp_Libs/mt/Release/llamacpp")
 
 find_package(llama CONFIG REQUIRED)
+
+set(TVLIB_ROOT "C:/Users/26495/Desktop/tvlib" CACHE PATH "tvlib source tree")
+if (EXISTS "${TVLIB_ROOT}/CMakeLists.txt")
+    set(TVLIB_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
+    add_subdirectory("${TVLIB_ROOT}" "${CMAKE_BINARY_DIR}/tvlib")
+endif()
 
 add_subdirectory ("mk")
 add_subdirectory ("path")
 add_subdirectory ("translate")
+add_subdirectory ("assist")
 add_subdirectory ("command_list")
 add_subdirectory ("mk_command")
 add_subdirectory ("designmode")

@@ -26,6 +26,7 @@ public:
     AtomCmdTranslate& operator=(const AtomCmdTranslate&) = delete;
 
     void translation(const std::string& input);
+    [[nodiscard]] std::string translate_text(const std::string& input);
     void output(std::vector<std::string>&& lines);
 
 private:

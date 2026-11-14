@@ -100,16 +100,21 @@ void AtomCmdTranslate::translation(const std::string& input) {
         output({});
         return;
     }
+    output({translate_text(input)});
+}
+
+std::string AtomCmdTranslate::translate_text(const std::string& input) {
+    if (input.empty()) return {};
 
     ensure_loaded();
 
-    std::vector<std::string> lines;
     const auto chunks = chunker_.split(input);
-    lines.reserve(chunks.size());
+    std::string result;
     for (const auto& chunk : chunks) {
-        lines.push_back(translator_->translate(chunk, pair_, options_));
+        if (!result.empty()) result.push_back('\n');
+        result += translator_->translate(chunk, pair_, options_);
     }
-    output(std::move(lines));
+    return result;
 }
 
 void AtomCmdTranslate::output(std::vector<std::string>&& lines) {
