@@ -59,6 +59,15 @@ mk zhja "你好，世界。"
 mk tr --to en --from zh "文本"
 ```
 
+加 `--speak` 会朗读译文（先生成、再播放，不落盘）：
+
+```powershell
+mk zhen "人工智能正在改变世界。" --speak
+mk zhja "你好，世界。" --speak --voice "路径/音色包" --steps 8
+```
+
+可选参数：`--voice <音色包目录>`、`--steps <n>`、`--engine`、`--model <gguf>`。
+
 ### OCR
 
 ```powershell

@@ -48,7 +48,7 @@ list(APPEND CMAKE_PREFIX_PATH "C:/Cpp_Libs/mt/Release/Boost" "C:/Cpp_Libs/mt/Rel
 
 find_package(llama CONFIG REQUIRED)
 
-set(TVLIB_ROOT "C:/Users/26495/Desktop/tvlib" CACHE PATH "tvlib source tree")
+set(TVLIB_ROOT "C:/Users/26495/Desktop/voc/code/lib/tvlib" CACHE PATH "tvlib source tree")
 if (EXISTS "${TVLIB_ROOT}/CMakeLists.txt")
     option(TVLIB_BUILD_TOOLS "构建 tv_demo" OFF)
     add_subdirectory("${TVLIB_ROOT}" "${CMAKE_BINARY_DIR}/tvlib")

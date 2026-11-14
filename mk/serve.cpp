@@ -2,6 +2,11 @@
 
 #include <assist/ocr_engine.h>
 #include <assist/tts_engine.h>
+#include <assist/utf8_path.h>
+
+#include <boost/locale/encoding.hpp>
+
+#include <translate_command/translate_command.h>
 
 #include <translate/i_translator.h>
 #include <translate/text_chunker.h>
@@ -9,6 +14,7 @@
 #include <translate/translate_types.h>
 #include <translate/translator_factory.h>
 
+#include <filesystem>
 #include <exception>
 #include <iostream>
 #include <memory>
@@ -25,6 +31,25 @@ using mk::translate::TextChunker;
 using mk::translate::TranslateConfig;
 using mk::translate::TranslateOptions;
 using mk::translate::TranslatorPtr;
+
+bool is_valid_utf8(const std::string& text) {
+    for (std::size_t i = 0; i < text.size(); ++i) {
+        const auto byte = static_cast<unsigned char>(text[i]);
+        if (byte <= 0x7F) continue;
+        std::size_t extra = 0;
+        if ((byte & 0xE0) == 0xC0) extra = 1;
+        else if ((byte & 0xF0) == 0xE0) extra = 2;
+        else if ((byte & 0xF8) == 0xF0) extra = 3;
+        else return false;
+
+        if (i + extra >= text.size()) return false;
+        for (std::size_t k = 1; k <= extra; ++k) {
+            if ((static_cast<unsigned char>(text[i + k]) & 0xC0) != 0x80) return false;
+        }
+        i += extra;
+    }
+    return true;
+}
 
 std::string trim(std::string value) {
     while (!value.empty() && (value.back() == '\r' || value.back() == '\n' || value.back() == ' ')) {
@@ -139,9 +164,84 @@ void run_ocr_request(Session& session, const OcrRequest& request) {
 
 } // namespace
 
+std::string to_utf8(std::string text) {
+    if (is_valid_utf8(text)) return text;
+    try {
+        return boost::locale::conv::between(text, "UTF-8", "GBK");
+    } catch (const std::exception&) {
+        return text;
+    }
+}
+
 int run_ocr(const std::vector<std::string>& args) {
     Session session;
     run_ocr_request(session, parse_ocr(args, 1));
+    return 0;
+}
+
+int run_translate(const std::vector<std::string>& args) {
+    const std::string command = args.front();
+
+    std::string from;
+    std::string to;
+    std::string engine;
+    std::string model_path;
+    std::filesystem::path voice;
+    int steps = 0;
+    bool speak = false;
+    std::vector<std::string> words;
+
+    for (std::size_t i = 1; i < args.size(); ++i) {
+        const std::string& arg = args[i];
+        const auto value = [&](const char* name) -> std::string {
+            if (i + 1 >= args.size()) throw std::runtime_error(std::string("missing value for ") + name);
+            return args[++i];
+        };
+
+        if (arg == "--speak") {
+            speak = true;
+        } else if (arg == "--from") {
+            from = value("--from");
+        } else if (arg == "--to") {
+            to = value("--to");
+        } else if (arg == "--engine") {
+            engine = value("--engine");
+        } else if (arg == "--model") {
+            model_path = value("--model");
+        } else if (arg == "--voice") {
+            voice = mk::assist::path_from_utf8(value("--voice"));
+        } else if (arg == "--steps") {
+            steps = std::stoi(value("--steps"));
+        } else {
+            words.push_back(arg);
+        }
+    }
+
+    LangPair pair;
+    if (command == "tr") {
+        if (to.empty()) throw std::runtime_error("mk tr: --to is required");
+        pair = LangPair{from.empty() ? "auto" : from, to};
+    } else {
+        const auto parsed = mk::translate::parse_pair_code(command);
+        if (!parsed) throw std::runtime_error("unknown language pair: " + command);
+        pair = *parsed;
+    }
+
+    const std::string text = to_utf8(join(words, 0));
+    if (text.empty()) throw std::runtime_error("no text to translate");
+
+    atomizationCmd_translate::AtomCmdTranslate translator(pair, engine, model_path);
+    const std::string result = translator.translate_text(text);
+    translator.output({result});
+
+    if (!speak) return 0;
+
+    Session session;
+    if (voice.empty()) session.speak(result);
+    else {
+        mk::assist::TtsEngine tts(voice);
+        tts.speak(result);
+    }
     return 0;
 }
 
@@ -162,7 +262,7 @@ int run_serve() {
 
     std::string line;
     while (std::getline(std::cin, line)) {
-        line = trim(line);
+        line = trim(to_utf8(line));
         if (line.empty()) continue;
         if (line == "quit" || line == "exit") break;
         if (line == "help") {
